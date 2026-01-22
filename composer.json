@@ -1,0 +1,61 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "nsrosenqvist/phpdoc-validator",
+    "type": "library",
+    "description": "Validates PHPDoc @param tags against method signatures",
+    "keywords": ["phpdoc", "validator", "documentation", "static-analysis", "phpstan", "psalm"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Niklas Rosenqvist",
+            "email": "niklas.s.rosenqvist@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "nikic/php-parser": "^5.0",
+        "phpdocumentor/reflection-docblock": "^5.4",
+        "symfony/console": "^6.4 || ^7.0"
+    },
+    "require-dev": {
+        "brianium/paratest": "^7.7",
+        "friendsofphp/php-cs-fixer": "^3.64",
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "NsRosenqvist\\PhpDocValidator\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "NsRosenqvist\\PhpDocValidator\\Tests\\": "tests/"
+        },
+        "exclude-from-classmap": [
+            "tests/fixtures/"
+        ]
+    },
+    "bin": [
+        "bin/phpdoc-validator"
+    ],
+    "scripts": {
+        "test": "paratest --processes=auto",
+        "test:coverage": "paratest --processes=auto --coverage-html=coverage",
+        "analyze": "phpstan analyse --memory-limit=1G",
+        "format": "php-cs-fixer fix",
+        "format:check": "php-cs-fixer fix --dry-run --diff",
+        "check": [
+            "@format:check",
+            "@analyze",
+            "@test"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

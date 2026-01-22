@@ -1,0 +1,289 @@
+{
+    "signature": {
+        "cacheVersion": 1,
+        "validatorVersion": "1.0.0.0",
+        "phpVersion": "8.4",
+        "reportMissing": false,
+        "cacheMode": "hash"
+    },
+    "files": {
+        "/home/niklas/Code/phpdoc-validator/tests/fixtures/ValidClass.php": {
+            "key": "8ae4d465667143094a8af80a877ff87f92b98a57512ed8ab4e9973652cd62da7",
+            "methodIssues": []
+        },
+        "/home/niklas/Code/phpdoc-validator/tests/fixtures/ExtraParamsClass.php": {
+            "key": "950271978ce153503651665036b1e735ecb695ca26fde699d4f397a73a92e587",
+            "methodIssues": [
+                {
+                    "method": {
+                        "name": "extraParamMethod",
+                        "line": 18,
+                        "className": "ExtraParamsClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "extra_param",
+                            "paramName": "nonexistent",
+                            "message": "Extra @param $nonexistent not in method signature",
+                            "expectedType": null,
+                            "actualType": null
+                        }
+                    ]
+                },
+                {
+                    "method": {
+                        "name": "multipleExtraParams",
+                        "line": 30,
+                        "className": "ExtraParamsClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "extra_param",
+                            "paramName": "age",
+                            "message": "Extra @param $age not in method signature",
+                            "expectedType": null,
+                            "actualType": null
+                        },
+                        {
+                            "type": "extra_param",
+                            "paramName": "active",
+                            "message": "Extra @param $active not in method signature",
+                            "expectedType": null,
+                            "actualType": null
+                        }
+                    ]
+                },
+                {
+                    "method": {
+                        "name": "typoParamMethod",
+                        "line": 40,
+                        "className": "ExtraParamsClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "extra_param",
+                            "paramName": "naem",
+                            "message": "Extra @param $naem not in method signature",
+                            "expectedType": null,
+                            "actualType": null
+                        }
+                    ]
+                }
+            ]
+        },
+        "/home/niklas/Code/phpdoc-validator/tests/fixtures/TypeMismatchClass.php": {
+            "key": "65d9f475e89ff321f422edc9805a618854ed6fb9cf9f427bc21a49c4d2eea349",
+            "methodIssues": [
+                {
+                    "method": {
+                        "name": "wrongTypeMethod",
+                        "line": 17,
+                        "className": "TypeMismatchClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "type_mismatch",
+                            "paramName": "name",
+                            "message": "Type mismatch for $name: signature has 'string', doc has 'int'",
+                            "expectedType": "string",
+                            "actualType": "int"
+                        }
+                    ]
+                },
+                {
+                    "method": {
+                        "name": "arrayVsStringMethod",
+                        "line": 27,
+                        "className": "TypeMismatchClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "type_mismatch",
+                            "paramName": "name",
+                            "message": "Type mismatch for $name: signature has 'string', doc has 'array'",
+                            "expectedType": "string",
+                            "actualType": "array"
+                        }
+                    ]
+                },
+                {
+                    "method": {
+                        "name": "nullableMismatchMethod",
+                        "line": 37,
+                        "className": "TypeMismatchClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "type_mismatch",
+                            "paramName": "name",
+                            "message": "Type mismatch for $name: signature has '?string', doc has 'string'",
+                            "expectedType": "?string",
+                            "actualType": "string"
+                        }
+                    ]
+                },
+                {
+                    "method": {
+                        "name": "objectMismatchMethod",
+                        "line": 47,
+                        "className": "TypeMismatchClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "type_mismatch",
+                            "paramName": "date",
+                            "message": "Type mismatch for $date: signature has 'string', doc has '\\DateTime'",
+                            "expectedType": "string",
+                            "actualType": "\\DateTime"
+                        }
+                    ]
+                },
+                {
+                    "method": {
+                        "name": "unionMismatchMethod",
+                        "line": 57,
+                        "className": "TypeMismatchClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "type_mismatch",
+                            "paramName": "value",
+                            "message": "Type mismatch for $value: signature has 'string|int', doc has 'bool|float'",
+                            "expectedType": "string|int",
+                            "actualType": "bool|float"
+                        }
+                    ]
+                }
+            ]
+        },
+        "/home/niklas/Code/phpdoc-validator/tests/fixtures/EdgeCasesClass.php": {
+            "key": "8173a5c7990e426536cda795a434d1ea43745c4517c52a45a07548d6539d4866",
+            "methodIssues": [
+                {
+                    "method": {
+                        "name": "protectedMethod",
+                        "line": 78,
+                        "className": "EdgeCasesClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "extra_param",
+                            "paramName": "extra",
+                            "message": "Extra @param $extra not in method signature",
+                            "expectedType": null,
+                            "actualType": null
+                        }
+                    ]
+                }
+            ]
+        },
+        "/home/niklas/Code/phpdoc-validator/tests/fixtures/SampleInterface.php": {
+            "key": "202491802333b565d778dd307f3403bad4ab98cb3a4c34f97b24e872afaad87e",
+            "methodIssues": [
+                {
+                    "method": {
+                        "name": "interfaceMethodWithExtra",
+                        "line": 25,
+                        "className": "SampleInterface"
+                    },
+                    "issues": [
+                        {
+                            "type": "extra_param",
+                            "paramName": "extra",
+                            "message": "Extra @param $extra not in method signature",
+                            "expectedType": null,
+                            "actualType": null
+                        }
+                    ]
+                }
+            ]
+        },
+        "/home/niklas/Code/phpdoc-validator/tests/fixtures/SampleTrait.php": {
+            "key": "04447f8bc067ac92d0640bd31576dab529c8d6342a615d9ecb2a56dbc348d70b",
+            "methodIssues": [
+                {
+                    "method": {
+                        "name": "traitMethodWithMismatch",
+                        "line": 27,
+                        "className": "SampleTrait"
+                    },
+                    "issues": [
+                        {
+                            "type": "type_mismatch",
+                            "paramName": "name",
+                            "message": "Type mismatch for $name: signature has 'string', doc has 'int'",
+                            "expectedType": "string",
+                            "actualType": "int"
+                        }
+                    ]
+                }
+            ]
+        },
+        "/home/niklas/Code/phpdoc-validator/tests/fixtures/functions.php": {
+            "key": "6b2d0ac2cabc4659abd59c802897e681f8cd2432633d8c0b45910cd80fe73ceb",
+            "methodIssues": [
+                {
+                    "method": {
+                        "name": "functionWithExtra",
+                        "line": 22,
+                        "className": null
+                    },
+                    "issues": [
+                        {
+                            "type": "extra_param",
+                            "paramName": "nonexistent",
+                            "message": "Extra @param $nonexistent not in method signature",
+                            "expectedType": null,
+                            "actualType": null
+                        }
+                    ]
+                },
+                {
+                    "method": {
+                        "name": "functionWithMismatch",
+                        "line": 32,
+                        "className": null
+                    },
+                    "issues": [
+                        {
+                            "type": "type_mismatch",
+                            "paramName": "name",
+                            "message": "Type mismatch for $name: signature has 'string', doc has 'int'",
+                            "expectedType": "string",
+                            "actualType": "int"
+                        }
+                    ]
+                }
+            ]
+        },
+        "/home/niklas/Code/phpdoc-validator/tests/fixtures/ComplexTypesClass.php": {
+            "key": "845e4c5361cfcfe2e774c2a64dc17157c56d533bf800cf8234028d001ecce50a",
+            "methodIssues": []
+        },
+        "/home/niklas/Code/phpdoc-validator/tests/fixtures/MissingParamsClass.php": {
+            "key": "b8456c6de8276a8a9d0905fa35822b71081318d0b8ae5f9d51c994143b05852e",
+            "methodIssues": []
+        },
+        "/home/niklas/Code/phpdoc-validator/tests/fixtures/ReturnTypesClass.php": {
+            "key": "254ab3d992b374e0b3f17e16773e1d281222783b8aee8e50d23dea4cac30e1e9",
+            "methodIssues": [
+                {
+                    "method": {
+                        "name": "mismatchedReturn",
+                        "line": 27,
+                        "className": "ReturnTypesClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "return_mismatch",
+                            "paramName": "@return",
+                            "message": "Return type mismatch: signature has 'string', doc has 'int'",
+                            "expectedType": "string",
+                            "actualType": "int"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

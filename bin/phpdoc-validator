@@ -1,0 +1,44 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * PHPDoc Validator - Validates PHPDoc @param tags against method signatures.
+ *
+ * @see https://github.com/nsrosenqvist/phpdoc-validator
+ */
+
+if (PHP_VERSION_ID < 80200) {
+    fwrite(STDERR, "PHPDoc Validator requires PHP 8.2 or higher.\n");
+    exit(2);
+}
+
+// Find autoloader
+$autoloadPaths = [
+    __DIR__ . '/../vendor/autoload.php',           // When installed as a project
+    __DIR__ . '/../../../autoload.php',            // When installed as a dependency
+];
+
+$autoloaderFound = false;
+foreach ($autoloadPaths as $autoloadPath) {
+    if (file_exists($autoloadPath)) {
+        require $autoloadPath;
+        $autoloaderFound = true;
+        break;
+    }
+}
+
+if (!$autoloaderFound) {
+    fwrite(STDERR, "Composer autoloader not found. Run 'composer install' first.\n");
+    exit(2);
+}
+
+use NsRosenqvist\PhpDocValidator\Command\ValidateCommand;
+use Symfony\Component\Console\Application;
+
+$application = new Application('PHPDoc Validator', '1.0.0');
+$application->add(new ValidateCommand());
+$application->setDefaultCommand('validate', true);
+
+exit($application->run());

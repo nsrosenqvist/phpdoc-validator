@@ -71,6 +71,7 @@ phpdoc-validator/
 ├── bin/
 │   └── phpdoc-validator      # CLI entry point
 ├── src/
+│   ├── Cache/                # Result caching (CacheMode, CacheSignature, ValidationCache)
 │   ├── Command/              # Symfony Console commands
 │   ├── Formatter/            # Output formatters
 │   ├── Parser/               # AST parsing components

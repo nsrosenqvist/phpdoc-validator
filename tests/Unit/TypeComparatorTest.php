@@ -153,4 +153,38 @@ final class TypeComparatorTest extends TestCase
         $this->assertSame('int|string', $this->comparator->normalize('string|int'));
         $this->assertSame('bool|int|string', $this->comparator->normalize('string|int|bool'));
     }
+
+    #[Test]
+    #[DataProvider('objectCompatibilityProvider')]
+    public function objectSignatureAcceptsClassNames(string $actual, string $doc, bool $expected): void
+    {
+        $this->assertSame($expected, $this->comparator->areCompatible($actual, $doc));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string, 2: bool}>
+     */
+    public static function objectCompatibilityProvider(): array
+    {
+        return [
+            // object signature + class name doc = compatible (doc is more specific)
+            'object vs MyClass' => ['object', 'MyClass', true],
+            'object vs DateTime' => ['object', 'DateTime', true],
+            'object vs \Fully\Qualified\ClassName' => ['object', '\Fully\Qualified\ClassName', true],
+            'object vs MyClass<T>' => ['object', 'MyClass<T>', true],
+            'object vs Generic<OtherClass>' => ['object', 'Generic<OtherClass>', true],
+
+            // class name signature + object doc = not compatible (doc loses specificity)
+            'MyClass vs object' => ['MyClass', 'object', false],
+            'DateTime vs object' => ['DateTime', 'object', false],
+
+            // object vs native types = not compatible
+            'object vs string' => ['object', 'string', false],
+            'object vs int' => ['object', 'int', false],
+            'object vs array' => ['object', 'array', false],
+
+            // object vs object = compatible (exact match)
+            'object vs object' => ['object', 'object', true],
+        ];
+    }
 }

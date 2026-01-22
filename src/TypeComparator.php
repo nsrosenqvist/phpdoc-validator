@@ -251,6 +251,41 @@ final class TypeComparator
             return true;
         }
 
+        // object signature accepts any class name in doc (doc is more specific)
+        // But class name in signature should not accept object in doc (loses specificity)
+        if ($actualBase === 'object' && $this->looksLikeClassName($docBase)) {
+            return true;
+        }
+
         return false;
+    }
+
+    /**
+     * Check if a type looks like a class name (not a PHP native type).
+     */
+    private function looksLikeClassName(string $type): bool
+    {
+        $nativeTypes = [
+            'string',
+            'int',
+            'float',
+            'bool',
+            'array',
+            'object',
+            'callable',
+            'iterable',
+            'null',
+            'void',
+            'never',
+            'mixed',
+            'true',
+            'false',
+            'self',
+            'static',
+            'parent',
+            'resource',
+        ];
+
+        return !in_array($type, $nativeTypes, true);
     }
 }

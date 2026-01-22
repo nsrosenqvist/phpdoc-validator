@@ -91,7 +91,7 @@ final class ValidateCommandTest extends TestCase
     {
         $exitCode = $this->commandTester->execute([
             'paths' => [$this->fixturesPath],
-            '--exclude' => ['*ExtraParams*', '*TypeMismatch*', '*BrokenSyntax*', '*Missing*', '*Edge*', '*Sample*', '*functions*', '*ReturnTypes*'],
+            '--exclude' => ['*ExtraParams*', '*TypeMismatch*', '*BrokenSyntax*', '*Missing*', '*Edge*', '*Sample*', '*functions*', '*ReturnTypes*', '*ParamOrder*'],
         ]);
 
         // With all problematic files excluded, should pass

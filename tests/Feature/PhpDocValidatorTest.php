@@ -206,7 +206,7 @@ final class PhpDocValidatorTest extends TestCase
     public function excludePatternsWork(): void
     {
         $validator = new PhpDocValidator();
-        $validator->setExcludePatterns(['*ExtraParams*', '*TypeMismatch*', '*BrokenSyntax*', '*Missing*', '*Edge*', '*Sample*', '*functions*', '*ReturnTypes*']);
+        $validator->setExcludePatterns(['*ExtraParams*', '*TypeMismatch*', '*BrokenSyntax*', '*Missing*', '*Edge*', '*Sample*', '*functions*', '*ReturnTypes*', '*ParamOrder*']);
 
         $report = $validator->validate([$this->fixturesPath]);
 

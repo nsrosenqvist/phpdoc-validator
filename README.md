@@ -52,6 +52,7 @@ vendor/bin/phpdoc-validator src/ --format=github
 | `--no-color` | | Disable colored output |
 | `--exclude` | `-e` | Patterns to exclude (can be used multiple times) |
 | `--missing` | `-m` | Also report missing `@param` and `@return` documentation |
+| `--fix` | | Automatically fix issues (see [Auto-fixing](#auto-fixing)) |
 | `--no-cache` | | Disable result caching |
 | `--clear-cache` | | Clear the cache before running validation |
 | `--cache-file` | | Path to the cache file (default: `.phpdoc-validator.cache`) |
@@ -77,6 +78,34 @@ With `--missing`, it also reports:
 
 4. **Missing @param tags** — Parameters in the signature that lack documentation
 5. **Missing @return tags** — Methods with return types that lack `@return` documentation
+
+Additionally, it always checks for:
+
+6. **Parameter order** — `@param` tags that don't match the order of parameters in the signature
+
+## Auto-fixing
+
+PHPDoc Validator can automatically fix certain issues:
+
+```bash
+# Fix param order issues
+vendor/bin/phpdoc-validator src/ --fix
+
+# Also add missing @param and @return tags
+vendor/bin/phpdoc-validator src/ --fix --missing
+```
+
+### What Can Be Fixed
+
+| Issue | `--fix` | `--fix --missing` |
+|-------|---------|-------------------|
+| Parameter order | ✓ | ✓ |
+| Missing `@param` | | ✓ |
+| Missing `@return` | | ✓ |
+| Type mismatches | | |
+| Extra params | | |
+
+Type mismatches and extra params cannot be auto-fixed because the PHPDoc often contains more specific type information than the native PHP signature.
 
 ## Type Compatibility
 

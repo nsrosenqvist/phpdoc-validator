@@ -98,6 +98,23 @@ final class MethodValidator
                 }
             }
 
+            // Check param order
+            $docOrder = $this->docBlockParser->getParamOrder($docComment);
+            $actualOrder = array_keys($actualParams);
+            // Only compare params that exist in both
+            $docOrderFiltered = array_values(array_intersect($docOrder, $actualOrder));
+            $actualOrderFiltered = array_values(array_intersect($actualOrder, $docOrder));
+
+            if ($docOrderFiltered !== [] && $docOrderFiltered !== $actualOrderFiltered) {
+                $issues[] = new Issue(
+                    type: IssueType::ParamOrder->value,
+                    paramName: '@params',
+                    message: 'Parameter order in @param tags does not match method signature',
+                    expectedType: implode(', ', $actualOrderFiltered),
+                    actualType: implode(', ', $docOrderFiltered),
+                );
+            }
+
             // Check for missing documentation (only if flag is set)
             if ($reportMissing) {
                 foreach (array_keys($actualParams) as $paramName) {

@@ -132,6 +132,36 @@ final class DocBlockParser
     }
 
     /**
+     * Get the ordered list of parameter names from @param tags.
+     *
+     * @return list<string>
+     */
+    public function getParamOrder(string $docComment): array
+    {
+        $docBlock = $this->getDocBlock($docComment);
+
+        if ($docBlock === null) {
+            return [];
+        }
+
+        $paramTags = $docBlock->getTagsByName('param');
+        $order = [];
+
+        foreach ($paramTags as $tag) {
+            if (!$tag instanceof Param) {
+                continue;
+            }
+
+            $varName = $tag->getVariableName();
+            if ($varName !== null && $varName !== '') {
+                $order[] = $varName;
+            }
+        }
+
+        return $order;
+    }
+
+    /**
      * Get or create a cached DocBlock instance for a doc comment.
      */
     private function getDocBlock(string $docComment): ?DocBlock

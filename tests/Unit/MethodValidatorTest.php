@@ -223,4 +223,70 @@ DOC,
         $this->assertCount(1, $issues);
         $this->assertSame(IssueType::ReturnMismatch, $issues[0]->issueType);
     }
+
+    #[Test]
+    public function validateDetectsParamOrderMismatch(): void
+    {
+        $method = new MethodInfo(
+            name: 'test',
+            line: 10,
+            parameters: ['first' => 'int', 'second' => 'string'],
+            docComment: <<<'DOC'
+/**
+ * @param string $second
+ * @param int $first
+ */
+DOC,
+        );
+
+        $issues = $this->validator->validate($method);
+
+        $this->assertCount(1, $issues);
+        $this->assertSame(IssueType::ParamOrder, $issues[0]->issueType);
+        $this->assertSame('first, second', $issues[0]->expectedType);
+        $this->assertSame('second, first', $issues[0]->actualType);
+    }
+
+    #[Test]
+    public function validateDoesNotReportParamOrderWhenCorrect(): void
+    {
+        $method = new MethodInfo(
+            name: 'test',
+            line: 10,
+            parameters: ['first' => 'int', 'second' => 'string'],
+            docComment: <<<'DOC'
+/**
+ * @param int $first
+ * @param string $second
+ */
+DOC,
+        );
+
+        $issues = $this->validator->validate($method);
+
+        $this->assertSame([], $issues);
+    }
+
+    #[Test]
+    public function validateDoesNotReportParamOrderWithMissingParams(): void
+    {
+        // When some params are missing from docs, we should only compare
+        // the params that exist in both, and only report order if those are wrong
+        $method = new MethodInfo(
+            name: 'test',
+            line: 10,
+            parameters: ['first' => 'int', 'second' => 'string', 'third' => 'bool'],
+            docComment: <<<'DOC'
+/**
+ * @param int $first
+ * @param bool $third
+ */
+DOC,
+        );
+
+        $issues = $this->validator->validate($method);
+
+        // Should not report param order issue since first and third are in correct relative order
+        $this->assertSame([], $issues);
+    }
 }

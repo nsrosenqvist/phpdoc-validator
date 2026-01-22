@@ -7,6 +7,7 @@ namespace NsRosenqvist\PhpDocValidator\Command;
 use NsRosenqvist\PhpDocValidator\Cache\CacheMode;
 use NsRosenqvist\PhpDocValidator\Cache\CacheSignature;
 use NsRosenqvist\PhpDocValidator\Cache\ValidationCache;
+use NsRosenqvist\PhpDocValidator\Fixer\DocBlockFixer;
 use NsRosenqvist\PhpDocValidator\Formatter\FormatterInterface;
 use NsRosenqvist\PhpDocValidator\Formatter\GithubActionsFormatter;
 use NsRosenqvist\PhpDocValidator\Formatter\JsonFormatter;
@@ -68,6 +69,12 @@ final class ValidateCommand extends Command
                 'Also report parameters that are missing @param documentation'
             )
             ->addOption(
+                'fix',
+                null,
+                InputOption::VALUE_NONE,
+                'Automatically fix issues (param order always, missing docs only with --missing)'
+            )
+            ->addOption(
                 'no-cache',
                 null,
                 InputOption::VALUE_NONE,
@@ -113,6 +120,10 @@ The <info>%command.name%</info> command validates that PHPDoc @param tags match 
 <comment>Report missing documentation:</comment>
   <info>%command.full_name% src/ --missing</info>
 
+<comment>Auto-fix issues:</comment>
+  <info>%command.full_name% src/ --fix</info>            (fix param order issues)
+  <info>%command.full_name% src/ --fix --missing</info>  (also add missing @param/@return tags)
+
 <comment>Caching (enabled by default):</comment>
   <info>%command.full_name% src/ --no-cache</info>       (disable caching)
   <info>%command.full_name% src/ --clear-cache</info>    (clear cache before run)
@@ -150,6 +161,7 @@ HELP);
 
         $noColor = $input->getOption('no-color') || !$this->supportsColors($output);
         $reportMissing = (bool) $input->getOption('missing');
+        $fix = (bool) $input->getOption('fix');
 
         // Cache options
         $noCache = (bool) $input->getOption('no-cache');
@@ -184,6 +196,7 @@ HELP);
         $validator->setReportMissing($reportMissing);
 
         // Configure caching
+        $cache = null;
         if ($cacheMode->isEnabled()) {
             $signature = new CacheSignature(
                 validatorVersion: $this->getValidatorVersion(),
@@ -207,6 +220,32 @@ HELP);
             $output->writeln("<error>Validation error: {$e->getMessage()}</error>");
 
             return self::EXIT_ERROR;
+        }
+
+        // Apply fixes if requested
+        $totalFixes = 0;
+        if ($fix && !$report->isClean()) {
+            $fixer = new DocBlockFixer();
+            $fixMissing = $reportMissing; // Only fix missing if --missing was passed
+
+            foreach ($report->getFileReports() as $fileReport) {
+                if (!$fileReport->hasIssues() || $fileReport->hasParseError()) {
+                    continue;
+                }
+
+                $fixes = $fixer->fix($fileReport, $fixMissing);
+                $totalFixes += $fixes;
+            }
+
+            if ($totalFixes > 0) {
+                $output->writeln("<info>Fixed {$totalFixes} issue(s)</info>");
+                $output->writeln('');
+
+                // Re-run validation to show remaining issues
+                $cache?->clear(); // Clear cache since files changed
+
+                $report = $validator->validate($paths);
+            }
         }
 
         // Format and output

@@ -70,4 +70,14 @@ final readonly class Issue
     {
         return $this->issueType === IssueType::MissingReturn;
     }
+
+    public function isParamOrder(): bool
+    {
+        return $this->issueType === IssueType::ParamOrder;
+    }
+
+    public function isFixable(): bool
+    {
+        return $this->issueType->isFixable();
+    }
 }

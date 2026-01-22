@@ -14,10 +14,11 @@ enum IssueType: string
     case MissingParam = 'missing_param';
     case ReturnMismatch = 'return_mismatch';
     case MissingReturn = 'missing_return';
+    case ParamOrder = 'param_order';
 
     public function isParamIssue(): bool
     {
-        return in_array($this, [self::ExtraParam, self::TypeMismatch, self::MissingParam], true);
+        return in_array($this, [self::ExtraParam, self::TypeMismatch, self::MissingParam, self::ParamOrder], true);
     }
 
     public function isReturnIssue(): bool
@@ -33,5 +34,10 @@ enum IssueType: string
     public function isMissing(): bool
     {
         return in_array($this, [self::MissingParam, self::MissingReturn], true);
+    }
+
+    public function isFixable(): bool
+    {
+        return in_array($this, [self::MissingParam, self::MissingReturn, self::ParamOrder], true);
     }
 }

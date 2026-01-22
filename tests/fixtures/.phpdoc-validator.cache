@@ -284,6 +284,43 @@
                     ]
                 }
             ]
+        },
+        "/home/niklas/Code/phpdoc-validator/tests/fixtures/ParamOrderClass.php": {
+            "key": "45aaaeaf6f7e8425ad7d63ce03d69e163cdf6fb241edf4448cdda8e23a261c12",
+            "methodIssues": [
+                {
+                    "method": {
+                        "name": "wrongOrder",
+                        "line": 18,
+                        "className": "ParamOrderClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "param_order",
+                            "paramName": "@params",
+                            "message": "Parameter order in @param tags does not match method signature",
+                            "expectedType": "first, second",
+                            "actualType": "second, first"
+                        }
+                    ]
+                },
+                {
+                    "method": {
+                        "name": "mixedIssues",
+                        "line": 38,
+                        "className": "ParamOrderClass"
+                    },
+                    "issues": [
+                        {
+                            "type": "param_order",
+                            "paramName": "@params",
+                            "message": "Parameter order in @param tags does not match method signature",
+                            "expectedType": "first, third",
+                            "actualType": "third, first"
+                        }
+                    ]
+                }
+            ]
         }
     }
 }

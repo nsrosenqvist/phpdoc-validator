@@ -18,6 +18,7 @@ final class IssueTypeTest extends TestCase
         $this->assertSame('missing_param', IssueType::MissingParam->value);
         $this->assertSame('return_mismatch', IssueType::ReturnMismatch->value);
         $this->assertSame('missing_return', IssueType::MissingReturn->value);
+        $this->assertSame('param_order', IssueType::ParamOrder->value);
     }
 
     #[Test]
@@ -26,6 +27,7 @@ final class IssueTypeTest extends TestCase
         $this->assertTrue(IssueType::ExtraParam->isParamIssue());
         $this->assertTrue(IssueType::TypeMismatch->isParamIssue());
         $this->assertTrue(IssueType::MissingParam->isParamIssue());
+        $this->assertTrue(IssueType::ParamOrder->isParamIssue());
     }
 
     #[Test]
@@ -78,6 +80,23 @@ final class IssueTypeTest extends TestCase
         $this->assertFalse(IssueType::ExtraParam->isMissing());
         $this->assertFalse(IssueType::TypeMismatch->isMissing());
         $this->assertFalse(IssueType::ReturnMismatch->isMissing());
+        $this->assertFalse(IssueType::ParamOrder->isMissing());
+    }
+
+    #[Test]
+    public function isFixableReturnsTrueForFixableTypes(): void
+    {
+        $this->assertTrue(IssueType::MissingParam->isFixable());
+        $this->assertTrue(IssueType::MissingReturn->isFixable());
+        $this->assertTrue(IssueType::ParamOrder->isFixable());
+    }
+
+    #[Test]
+    public function isFixableReturnsFalseForNonFixableTypes(): void
+    {
+        $this->assertFalse(IssueType::ExtraParam->isFixable());
+        $this->assertFalse(IssueType::TypeMismatch->isFixable());
+        $this->assertFalse(IssueType::ReturnMismatch->isFixable());
     }
 
     #[Test]
@@ -88,5 +107,6 @@ final class IssueTypeTest extends TestCase
         $this->assertSame(IssueType::MissingParam, IssueType::from('missing_param'));
         $this->assertSame(IssueType::ReturnMismatch, IssueType::from('return_mismatch'));
         $this->assertSame(IssueType::MissingReturn, IssueType::from('missing_return'));
+        $this->assertSame(IssueType::ParamOrder, IssueType::from('param_order'));
     }
 }

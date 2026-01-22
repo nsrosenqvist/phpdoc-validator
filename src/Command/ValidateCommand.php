@@ -259,23 +259,15 @@ HELP);
      */
     private function getValidatorVersion(): string
     {
-        // Try to get version from Composer's installed packages
-        $installedPath = __DIR__ . '/../../vendor/composer/installed.php';
-
-        if (file_exists($installedPath)) {
-            /** @var array<string, mixed> $installed */
-            $installed = require $installedPath;
-
-            if (
-                is_array($installed)
-                && isset($installed['versions'])
-                && is_array($installed['versions'])
-                && isset($installed['versions']['nsrosenqvist/phpdoc-validator'])
-                && is_array($installed['versions']['nsrosenqvist/phpdoc-validator'])
-                && isset($installed['versions']['nsrosenqvist/phpdoc-validator']['version'])
-                && is_string($installed['versions']['nsrosenqvist/phpdoc-validator']['version'])
-            ) {
-                return $installed['versions']['nsrosenqvist/phpdoc-validator']['version'];
+        // Use Composer's runtime API to get the installed version
+        if (class_exists(\Composer\InstalledVersions::class)) {
+            try {
+                $version = \Composer\InstalledVersions::getVersion('nsrosenqvist/phpdoc-validator');
+                if ($version !== null) {
+                    return $version;
+                }
+            } catch (\OutOfBoundsException) {
+                // Package not found in installed versions
             }
         }
 

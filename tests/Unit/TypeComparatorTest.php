@@ -252,6 +252,9 @@ final class TypeComparatorTest extends TestCase
             'mixed vs TValue' => ['mixed', 'TValue'],
             'mixed vs TKey' => ['mixed', 'TKey'],
             'mixed vs TReturn' => ['mixed', 'TReturn'],
+            // With leading backslash (type resolver may add it treating T as class)
+            'mixed vs \\T' => ['mixed', '\\T'],
+            'mixed vs \\TValue' => ['mixed', '\\TValue'],
         ];
     }
 

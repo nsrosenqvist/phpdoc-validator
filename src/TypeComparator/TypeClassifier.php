@@ -50,7 +50,10 @@ final class TypeClassifier
     {
         // Template types are typically single uppercase letters or
         // uppercase letter followed by more letters (TValue, TKey, etc.)
-        // They should not contain backslashes (which would indicate a class name)
+        // Strip leading backslash if present (type resolver may add it treating T as class)
+        $type = ltrim($type, '\\');
+
+        // Should not contain any other backslashes (which would indicate a namespaced class)
         if (str_contains($type, '\\')) {
             return false;
         }

@@ -71,18 +71,17 @@ phpdoc-validator/
 ├── bin/
 │   └── phpdoc-validator      # CLI entry point
 ├── src/
-│   ├── Cache/                # Result caching (CacheMode, CacheSignature, ValidationCache)
+│   ├── Cache/                # Result caching
 │   ├── Command/              # Symfony Console commands
 │   ├── Formatter/            # Output formatters
 │   ├── Parser/               # AST parsing components
-│   ├── FileReport.php        # Single file report
-│   ├── Issue.php             # Validation issue
-│   ├── MethodInfo.php        # Method metadata
+│   ├── TypeComparator/       # Type comparison subsystem
+│   │   └── Rules/            # Pluggable compatibility rules
+│   ├── Validator/            # Method validation
 │   ├── PhpDocValidator.php   # Main orchestrator
-│   ├── Report.php            # Aggregate report
-│   └── TypeComparator.php    # Type comparison logic
+│   └── TypeComparator.php    # Type comparison orchestrator
 └── tests/
-    ├── Unit/                 # Unit tests
+    ├── Unit/                 # Unit tests (mirror src/ structure)
     ├── Feature/              # Integration/CLI tests
     └── fixtures/             # Test fixture PHP files
 ```

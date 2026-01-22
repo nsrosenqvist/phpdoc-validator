@@ -99,6 +99,7 @@ final class TypeComparatorTest extends TestCase
             'int vs non-negative-int' => ['int', 'non-negative-int'],
             'string vs numeric-string' => ['string', 'numeric-string'],
             'string vs callable-string' => ['string', 'callable-string'],
+            'string vs non-empty-string' => ['string', 'non-empty-string'],
         ];
     }
 
@@ -185,6 +186,237 @@ final class TypeComparatorTest extends TestCase
 
             // object vs object = compatible (exact match)
             'object vs object' => ['object', 'object', true],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('arrayShapeProvider')]
+    public function arrayShapesAreCompatibleWithArray(string $actual, string $doc): void
+    {
+        $this->assertTrue($this->comparator->areCompatible($actual, $doc));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function arrayShapeProvider(): array
+    {
+        return [
+            'array vs simple shape' => ['array', 'array{theme: string}'],
+            'nullable array vs nullable shape' => ['?array', 'array{theme: string}|null'],
+            'array vs complex shape' => ['array', 'array{id: int, name: string, active: bool}'],
+            'array vs nested shape' => ['array', 'array{user: array{id: int, name: string}}'],
+            'nullable array vs complex nullable shape' => [
+                '?array',
+                'array{pr_number: int|null, title: string|null}|null',
+            ],
+            'array vs shape with optional keys' => ['array', 'array{required: string, optional?: int}'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('stringLiteralProvider')]
+    public function stringLiteralUnionsAreCompatibleWithString(string $actual, string $doc): void
+    {
+        $this->assertTrue($this->comparator->areCompatible($actual, $doc));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function stringLiteralProvider(): array
+    {
+        return [
+            'string vs double-quoted literal union' => ['string', '"low"|"medium"|"high"'],
+            'string vs single-quoted literal union' => ['string', "'low'|'medium'|'high'"],
+            'string vs two literals' => ['string', '"yes"|"no"'],
+            'string vs single literal' => ['string', '"only"'],
+            'string vs color literals' => ['string', '"green"|"yellow"|"red"|"neutral"'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('templateTypeProvider')]
+    public function templateTypesAreCompatibleWithMixed(string $actual, string $doc): void
+    {
+        $this->assertTrue($this->comparator->areCompatible($actual, $doc));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function templateTypeProvider(): array
+    {
+        return [
+            'mixed vs T' => ['mixed', 'T'],
+            'mixed vs TValue' => ['mixed', 'TValue'],
+            'mixed vs TKey' => ['mixed', 'TKey'],
+            'mixed vs TReturn' => ['mixed', 'TReturn'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('genericClassTypeProvider')]
+    public function genericClassTypesAreCompatibleWithBaseClass(string $actual, string $doc): void
+    {
+        $this->assertTrue($this->comparator->areCompatible($actual, $doc));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function genericClassTypeProvider(): array
+    {
+        return [
+            'Generator vs Generator with type params' => [
+                'Generator',
+                'Generator<int, string>',
+            ],
+            'Collection vs Collection with type params' => [
+                'Collection',
+                'Collection<int|string, array<string, mixed>>',
+            ],
+            'iterable vs iterable with complex types' => [
+                'iterable',
+                'iterable<FileNode|CommitNode|Model>',
+            ],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('nullableClassStringProvider')]
+    public function nullableClassStringIsCompatibleWithNullableString(string $actual, string $doc): void
+    {
+        $this->assertTrue($this->comparator->areCompatible($actual, $doc));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function nullableClassStringProvider(): array
+    {
+        return [
+            'nullable string vs class-string|null' => ['?string', 'class-string|null'],
+            'nullable string vs non-empty-string|null' => ['?string', 'non-empty-string|null'],
+            'string|null vs class-string|null' => ['string|null', 'class-string|null'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('listTypeProvider')]
+    public function listTypesAreCompatibleWithArray(string $actual, string $doc): void
+    {
+        $this->assertTrue($this->comparator->areCompatible($actual, $doc));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function listTypeProvider(): array
+    {
+        return [
+            'array vs list of class union' => ['array', 'list<SystemMessage|UserMessage|AssistantMessage>'],
+            'array vs list of objects' => ['array', 'list<object>'],
+            'array vs list of arrays' => ['array', 'list<array{id: int, name: string}>'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('newPhpDocTypesProvider')]
+    public function newPhpDocTypesAreCompatible(string $actual, string $doc): void
+    {
+        $this->assertTrue($this->comparator->areCompatible($actual, $doc));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function newPhpDocTypesProvider(): array
+    {
+        return [
+            // Int range and mask types
+            'int vs int<0, 100>' => ['int', 'int<0, 100>'],
+            'int vs int<min, max>' => ['int', 'int<min, max>'],
+            'int vs int-mask<1, 2, 4>' => ['int', 'int-mask<1, 2, 4>'],
+            'int vs int-mask-of<MyClass::CONST_*>' => ['int', 'int-mask-of<MyClass::CONST_*>'],
+            'int vs integer literal 0' => ['int', '0'],
+            'int vs integer literal 42' => ['int', '42'],
+            'int vs integer literal -1' => ['int', '-1'],
+
+            // Additional string types
+            'string vs literal-string' => ['string', 'literal-string'],
+            'string vs lowercase-string' => ['string', 'lowercase-string'],
+            'string vs truthy-string' => ['string', 'truthy-string'],
+            'string vs non-falsy-string' => ['string', 'non-falsy-string'],
+            'string vs trait-string' => ['string', 'trait-string'],
+            'string vs interface-string' => ['string', 'interface-string'],
+
+            // Callable with signature
+            'callable vs callable(string): void' => ['callable', 'callable(string): void'],
+            'callable vs callable(int, string): bool' => ['callable', 'callable(int, string): bool'],
+
+            // key-of and value-of
+            'string vs key-of<array>' => ['string', 'key-of<array<string, mixed>>'],
+            'int vs key-of<list>' => ['int', 'key-of<list<string>>'],
+
+            // Generic class matching
+            'Generator vs Generator<int, string>' => ['Generator', 'Generator<int, string>'],
+            'ArrayIterator vs ArrayIterator<string>' => ['ArrayIterator', 'ArrayIterator<string>'],
+
+            // array-key
+            'string|int vs array-key' => ['string|int', 'array-key'],
+            'int|string vs array-key' => ['int|string', 'array-key'],
+
+            // scalar
+            'int|float|string|bool vs scalar' => ['int|float|string|bool', 'scalar'],
+            'bool|float|int|string vs scalar' => ['bool|float|int|string', 'scalar'],
+
+            // numeric
+            'int|float vs numeric' => ['int|float', 'numeric'],
+            'float|int vs numeric' => ['float|int', 'numeric'],
+
+            // callable-array
+            'array vs callable-array' => ['array', 'callable-array'],
+
+            // object shapes
+            'object vs object{prop: string}' => ['object', 'object{prop: string}'],
+            'object vs object{id: int, name: string}' => ['object', 'object{id: int, name: string}'],
+
+            // never aliases
+            'never vs never-return' => ['never', 'never-return'],
+            'never vs no-return' => ['never', 'no-return'],
+            'never vs noreturn' => ['never', 'noreturn'],
+
+            // resource types
+            'resource vs closed-resource' => ['resource', 'closed-resource'],
+            'resource vs open-resource' => ['resource', 'open-resource'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('customRulesProvider')]
+    public function customRulesCanBeInjected(string $actual, string $doc, bool $expected): void
+    {
+        // Create comparator with no rules
+        $comparator = new TypeComparator([]);
+
+        // Without rules, only exact matches or base type matches should work
+        $this->assertSame($expected, $comparator->areCompatible($actual, $doc));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string, 2: bool}>
+     */
+    public static function customRulesProvider(): array
+    {
+        return [
+            'exact match still works' => ['string', 'string', true],
+            // Base types match (array === array after stripping generics)
+            'array vs array<T> works via base type' => ['array', 'array<string>', true],
+            // These require rules to match
+            'string vs class-string fails without rule' => ['string', 'class-string', false],
+            'int vs positive-int fails without rule' => ['int', 'positive-int', false],
+            'object vs MyClass fails without rule' => ['object', 'MyClass', false],
         ];
     }
 }

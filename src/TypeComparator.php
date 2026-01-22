@@ -4,23 +4,55 @@ declare(strict_types=1);
 
 namespace NsRosenqvist\PhpDocValidator;
 
+use NsRosenqvist\PhpDocValidator\TypeComparator\CompatibilityRuleInterface;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\ArrayKeyRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\ArrayTypeRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\CallableTypeRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\ConditionalTypeRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\GenericClassRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\IntTypeRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\IterableTypeRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\KeyOfRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\NeverTypeRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\NumericRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\ObjectTypeRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\ResourceTypeRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\ScalarRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\StringLiteralRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\StringTypeRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\TemplateTypeRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\Rules\ValueOfRule;
+use NsRosenqvist\PhpDocValidator\TypeComparator\TypeClassifier;
+use NsRosenqvist\PhpDocValidator\TypeComparator\TypeNormalizer;
+use NsRosenqvist\PhpDocValidator\TypeComparator\TypeParser;
+
 /**
  * Compares types between method signatures and PHPDoc annotations.
+ *
+ * Uses a rule-based architecture for extensibility.
  */
 final class TypeComparator
 {
+    private readonly TypeParser $parser;
+    private readonly TypeNormalizer $normalizer;
+    private readonly TypeClassifier $classifier;
+
     /**
-     * Type aliases that should be considered equivalent.
-     *
-     * @var array<string, string>
+     * @var list<CompatibilityRuleInterface>
      */
-    private const TYPE_ALIASES = [
-        'boolean' => 'bool',
-        'integer' => 'int',
-        'double' => 'float',
-        'real' => 'float',
-        'callback' => 'callable',
-    ];
+    private readonly array $rules;
+
+    /**
+     * @param list<CompatibilityRuleInterface>|null $rules Custom rules (uses defaults if null)
+     */
+    public function __construct(?array $rules = null)
+    {
+        $this->parser = new TypeParser();
+        $this->classifier = new TypeClassifier();
+        $this->normalizer = new TypeNormalizer($this->parser);
+
+        $this->rules = $rules ?? $this->createDefaultRules();
+    }
 
     /**
      * Check if a documented type is compatible with the actual signature type.
@@ -44,24 +76,29 @@ final class TypeComparator
         }
 
         // Compare as sets for union types
-        $actualParts = $this->parseUnionType($normalizedActual);
-        $docParts = $this->parseUnionType($normalizedDoc);
+        $actualParts = $this->parser->parseUnionType($normalizedActual);
+        $docParts = $this->parser->parseUnionType($docType); // Use original for special type detection
 
         // If both are union types with same parts (order-independent)
-        if ($this->setsEqual($actualParts, $docParts)) {
+        if ($this->parser->setsEqual($actualParts, $this->parser->parseUnionType($normalizedDoc))) {
+            return true;
+        }
+
+        // Check if union types are compatible part-by-part
+        if ($this->areUnionTypesCompatible($actualParts, $docParts)) {
             return true;
         }
 
         // Base type comparison (strip generics)
-        $actualBase = $this->stripGenerics($normalizedActual);
-        $docBase = $this->stripGenerics($normalizedDoc);
+        $actualBase = $this->parser->stripGenerics($normalizedActual);
+        $docBase = $this->parser->stripGenerics($normalizedDoc);
 
         if ($actualBase === $docBase) {
             return true;
         }
 
-        // Handle PHPDoc-specific types that are compatible with PHP native types
-        if ($this->isDocTypeCompatibleWithNative($actualBase, $docBase)) {
+        // Try compatibility rules
+        if ($this->checkRules($actualBase, $docBase)) {
             return true;
         }
 
@@ -73,219 +110,119 @@ final class TypeComparator
      */
     public function normalize(?string $type): ?string
     {
-        if ($type === null || trim($type) === '') {
-            return null;
-        }
-
-        $type = trim($type);
-        $type = strtolower($type);
-
-        // Remove leading backslashes from fully qualified class names
-        $type = ltrim($type, '\\');
-
-        // Remove backslashes before class names in intersection types
-        $type = preg_replace('/\\\\([a-z])/', '$1', $type) ?? $type;
-
-        // Convert nullable syntax to union
-        if (str_starts_with($type, '?')) {
-            $type = substr($type, 1) . '|null';
-        }
-
-        // Apply type aliases
-        foreach (self::TYPE_ALIASES as $alias => $canonical) {
-            $type = preg_replace('/\b' . preg_quote($alias, '/') . '\b/', $canonical, $type) ?? $type;
-        }
-
-        // Sort union types for consistent comparison
-        if (str_contains($type, '|') && !str_contains($type, '(')) {
-            $parts = explode('|', $type);
-            $parts = array_map('trim', $parts);
-            sort($parts);
-            $type = implode('|', $parts);
-        }
-
-        // Sort intersection types for consistent comparison
-        if (str_contains($type, '&') && !str_contains($type, '(')) {
-            $parts = explode('&', $type);
-            $parts = array_map('trim', $parts);
-            sort($parts);
-            $type = implode('&', $parts);
-        }
-
-        return $type;
+        return $this->normalizer->normalize($type);
     }
 
     /**
-     * Parse a union type into its constituent parts.
+     * Check if union types are compatible by comparing parts.
      *
-     * @return list<string>
+     * @param list<string> $actualParts Parts from normalized actual type (lowercase)
+     * @param list<string> $docParts Parts from original doc type (case preserved)
      */
-    private function parseUnionType(string $type): array
+    private function areUnionTypesCompatible(array $actualParts, array $docParts): bool
     {
-        // Simple split for non-nested unions
-        if (!str_contains($type, '<') && !str_contains($type, '(')) {
-            $parts = explode('|', $type);
-            $parts = array_map('trim', $parts);
-            sort($parts);
+        // For each actual part, find compatible doc parts
+        $matchedDocParts = [];
 
-            return $parts;
-        }
+        foreach ($actualParts as $actualPart) {
+            $foundMatch = false;
 
-        // Handle nested types (generics, callables) by splitting carefully
-        $parts = [];
-        $current = '';
-        $depth = 0;
-
-        for ($i = 0; $i < strlen($type); $i++) {
-            $char = $type[$i];
-
-            if ($char === '<' || $char === '(' || $char === '[' || $char === '{') {
-                $depth++;
-                $current .= $char;
-            } elseif ($char === '>' || $char === ')' || $char === ']' || $char === '}') {
-                $depth--;
-                $current .= $char;
-            } elseif ($char === '|' && $depth === 0) {
-                if (trim($current) !== '') {
-                    $parts[] = trim($current);
+            foreach ($docParts as $index => $docPart) {
+                if (in_array($index, $matchedDocParts, true)) {
+                    continue;
                 }
-                $current = '';
-            } else {
-                $current .= $char;
+
+                // Check for string literal unions: string matches "a"|"b"|"c"
+                if ($actualPart === 'string' && $this->classifier->isStringLiteral($docPart)) {
+                    $matchedDocParts[] = $index;
+                    $foundMatch = true;
+                    continue;
+                }
+
+                // Normalize both for comparison
+                $actualBase = $this->parser->stripGenerics(strtolower($actualPart));
+                $docBase = $this->parser->stripGenerics(strtolower($docPart));
+
+                if ($actualBase === $docBase) {
+                    $matchedDocParts[] = $index;
+                    $foundMatch = true;
+                    continue;
+                }
+
+                // Try compatibility rules
+                if ($this->checkRules($actualBase, $docBase)) {
+                    $matchedDocParts[] = $index;
+                    $foundMatch = true;
+                    continue;
+                }
+
+                // Check for template types: mixed matches T, TValue, etc.
+                if ($actualPart === 'mixed' && $this->classifier->isTemplateType($docPart)) {
+                    $matchedDocParts[] = $index;
+                    $foundMatch = true;
+                    continue;
+                }
+            }
+
+            if (!$foundMatch) {
+                return false;
             }
         }
 
-        if (trim($current) !== '') {
-            $parts[] = trim($current);
-        }
+        // Check that all doc parts were matched (or are string literals that matched 'string')
+        $unmatchedDocParts = array_diff(array_keys($docParts), $matchedDocParts);
+        foreach ($unmatchedDocParts as $index) {
+            $docPart = $docParts[$index];
+            // Unmatched string literals are acceptable if 'string' was in actual
+            if ($this->classifier->isStringLiteral($docPart) && in_array('string', $actualParts, true)) {
+                continue;
+            }
 
-        sort($parts);
-
-        return $parts;
-    }
-
-    /**
-     * Strip generic type parameters for base type comparison.
-     */
-    private function stripGenerics(string $type): string
-    {
-        // Remove everything between < and >
-        return (string) preg_replace('/<[^>]*>/', '', $type);
-    }
-
-    /**
-     * Check if two arrays contain the same elements (order-independent).
-     *
-     * @param list<string> $a
-     * @param list<string> $b
-     */
-    private function setsEqual(array $a, array $b): bool
-    {
-        if (count($a) !== count($b)) {
             return false;
         }
 
-        sort($a);
-        sort($b);
-
-        return $a === $b;
+        return true;
     }
 
     /**
-     * Check if a PHPDoc-specific type is compatible with a native PHP type.
+     * Check if any rule considers the types compatible.
      */
-    private function isDocTypeCompatibleWithNative(string $actualBase, string $docBase): bool
+    private function checkRules(string $nativeType, string $docType): bool
     {
-        // class-string<T> is compatible with string
-        if ($actualBase === 'string' && str_starts_with($docBase, 'class-string')) {
-            return true;
-        }
-
-        // Array compatibility: PHPDoc can specify more specific array types
-        // - Type[] syntax (e.g., string[], \Tag[])
-        // - array<K,V> syntax
-        // - list<T>, non-empty-list<T>, non-empty-array<T>
-        if ($actualBase === 'array') {
-            // Type[] syntax - matches anything ending with []
-            if (str_ends_with($docBase, '[]')) {
+        foreach ($this->rules as $rule) {
+            if ($rule->supports($nativeType, $docType) && $rule->isCompatible($nativeType, $docType)) {
                 return true;
             }
-
-            if (str_starts_with($docBase, 'list')
-                || str_starts_with($docBase, 'non-empty-list')
-                || str_starts_with($docBase, 'non-empty-array')
-                || str_starts_with($docBase, 'array')) {
-                return true;
-            }
-        }
-
-        // iterable<T> is compatible with iterable
-        if ($actualBase === 'iterable' && str_starts_with($docBase, 'iterable')) {
-            return true;
-        }
-
-        // positive-int, negative-int, non-negative-int, non-positive-int are compatible with int
-        if ($actualBase === 'int') {
-            if (str_contains($docBase, '-int') || $docBase === 'positive-int'
-                || $docBase === 'negative-int' || $docBase === 'non-negative-int'
-                || $docBase === 'non-positive-int') {
-                return true;
-            }
-        }
-
-        // numeric-string is compatible with string
-        if ($actualBase === 'string' && str_contains($docBase, '-string')) {
-            return true;
-        }
-
-        // callable-string is compatible with string
-        if ($actualBase === 'string' && $docBase === 'callable-string') {
-            return true;
-        }
-
-        // \Closure is compatible with callable
-        if ($actualBase === 'callable' && $docBase === 'closure') {
-            return true;
-        }
-        if ($actualBase === 'closure' && $docBase === 'callable') {
-            return true;
-        }
-
-        // object signature accepts any class name in doc (doc is more specific)
-        // But class name in signature should not accept object in doc (loses specificity)
-        if ($actualBase === 'object' && $this->looksLikeClassName($docBase)) {
-            return true;
         }
 
         return false;
     }
 
     /**
-     * Check if a type looks like a class name (not a PHP native type).
+     * Create the default set of compatibility rules.
+     *
+     * @return list<CompatibilityRuleInterface>
      */
-    private function looksLikeClassName(string $type): bool
+    private function createDefaultRules(): array
     {
-        $nativeTypes = [
-            'string',
-            'int',
-            'float',
-            'bool',
-            'array',
-            'object',
-            'callable',
-            'iterable',
-            'null',
-            'void',
-            'never',
-            'mixed',
-            'true',
-            'false',
-            'self',
-            'static',
-            'parent',
-            'resource',
+        return [
+            new ArrayTypeRule(),
+            new StringTypeRule(),
+            new StringLiteralRule($this->classifier),
+            new IntTypeRule($this->classifier),
+            new CallableTypeRule(),
+            new ObjectTypeRule($this->classifier),
+            new IterableTypeRule(),
+            new TemplateTypeRule($this->classifier),
+            new KeyOfRule(),
+            new ValueOfRule(),
+            new ConditionalTypeRule(),
+            new GenericClassRule(),
+            new ArrayKeyRule(),
+            new ScalarRule(),
+            new NumericRule(),
+            new NeverTypeRule(),
+            new ResourceTypeRule(),
         ];
-
-        return !in_array($type, $nativeTypes, true);
     }
 }

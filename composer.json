@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "nsrosenqvist/phpdoc-validator",
     "type": "library",
-    "description": "Validates PHPDoc @param tags against method signatures",
+    "description": "Validates PHPDoc @param and @return tags against method signatures",
     "keywords": ["phpdoc", "validator", "documentation", "static-analysis", "phpstan", "psalm"],
     "license": "MIT",
     "authors": [

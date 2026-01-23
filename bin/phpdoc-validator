@@ -38,7 +38,7 @@ use NsRosenqvist\PhpDocValidator\Command\ValidateCommand;
 use Symfony\Component\Console\Application;
 
 $application = new Application('PHPDoc Validator', '1.0.0');
-$application->add(new ValidateCommand());
+$application->addCommand(new ValidateCommand());
 $application->setDefaultCommand('validate', true);
 
 exit($application->run());

@@ -1,7 +1,7 @@
 {
     "signature": {
         "cacheVersion": 1,
-        "validatorVersion": "1.0.0.0",
+        "validatorVersion": "dev-main",
         "phpVersion": "8.4",
         "reportMissing": false,
         "cacheMode": "hash"

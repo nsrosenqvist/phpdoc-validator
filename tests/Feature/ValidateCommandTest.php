@@ -19,7 +19,7 @@ final class ValidateCommandTest extends TestCase
     protected function setUp(): void
     {
         $application = new Application();
-        $application->add(new ValidateCommand());
+        $application->addCommand(new ValidateCommand());
         $command = $application->find('validate');
         $this->commandTester = new CommandTester($command);
         $this->fixturesPath = dirname(__DIR__) . '/fixtures';
@@ -177,7 +177,7 @@ final class ValidateCommandTest extends TestCase
     {
         // Test that the command has all expected options defined
         $application = new Application();
-        $application->add(new ValidateCommand());
+        $application->addCommand(new ValidateCommand());
         $command = $application->find('validate');
 
         $definition = $command->getDefinition();

@@ -325,6 +325,26 @@ final class TypeComparatorTest extends TestCase
     }
 
     #[Test]
+    #[DataProvider('unionWithArraySyntaxProvider')]
+    public function unionTypesWithArraySyntaxAreCompatible(string $actual, string $doc): void
+    {
+        $this->assertTrue($this->comparator->areCompatible($actual, $doc));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function unionWithArraySyntaxProvider(): array
+    {
+        return [
+            // Union with Type[] syntax in doc
+            'MenuItem|array vs MenuItem|MenuItem[]' => ['MenuItem|array', '\MenuItem|\MenuItem[]'],
+            'string|array vs string|string[]' => ['string|array', 'string|string[]'],
+            'Item|array vs Item|Item[]' => ['Item|array', 'Item|Item[]'],
+        ];
+    }
+
+    #[Test]
     #[DataProvider('newPhpDocTypesProvider')]
     public function newPhpDocTypesAreCompatible(string $actual, string $doc): void
     {

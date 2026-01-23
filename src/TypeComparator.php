@@ -139,9 +139,10 @@ final class TypeComparator
                     continue;
                 }
 
-                // Normalize both for comparison
+                // Normalize both for comparison (stripping leading backslash and lowercasing)
+                $normalizedDocPart = $this->normalize($docPart) ?? strtolower($docPart);
                 $actualBase = $this->parser->stripGenerics(strtolower($actualPart));
-                $docBase = $this->parser->stripGenerics(strtolower($docPart));
+                $docBase = $this->parser->stripGenerics($normalizedDocPart);
 
                 if ($actualBase === $docBase) {
                     $matchedDocParts[] = $index;
@@ -149,8 +150,8 @@ final class TypeComparator
                     continue;
                 }
 
-                // Try compatibility rules
-                if ($this->checkRules($actualBase, $docBase)) {
+                // Try compatibility rules (preserve doc structure for pattern matching like Type[])
+                if ($this->checkRules($actualBase, $normalizedDocPart)) {
                     $matchedDocParts[] = $index;
                     $foundMatch = true;
                     continue;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NsRosenqvist\PhpDocValidator\Tests\Feature;
 
 use NsRosenqvist\PhpDocValidator\FileReport;
+use NsRosenqvist\PhpDocValidator\Formatter\CheckstyleFormatter;
 use NsRosenqvist\PhpDocValidator\Formatter\GithubActionsFormatter;
 use NsRosenqvist\PhpDocValidator\Formatter\JsonFormatter;
 use NsRosenqvist\PhpDocValidator\Formatter\PrettyFormatter;
@@ -248,5 +249,121 @@ final class FormatterTest extends TestCase
 
         $this->assertSame(1, $data['summary']['parseErrors']);
         $this->assertSame('Syntax error', $data['files'][0]['parseError']);
+    }
+
+    #[Test]
+    public function checkstyleFormatterOutputsValidXml(): void
+    {
+        $formatter = new CheckstyleFormatter();
+        $report = $this->createReportWithIssues();
+
+        $output = $formatter->format($report, '/path/to');
+
+        $xml = new \SimpleXMLElement($output);
+        $this->assertSame('checkstyle', $xml->getName());
+        $this->assertSame('4.3', (string) $xml['version']);
+    }
+
+    #[Test]
+    public function checkstyleFormatterIncludesFileAndErrorElements(): void
+    {
+        $formatter = new CheckstyleFormatter();
+        $report = $this->createReportWithIssues();
+
+        $output = $formatter->format($report, '/path/to');
+
+        $xml = new \SimpleXMLElement($output);
+        $this->assertCount(2, $xml->file);
+
+        $file1 = $xml->file[0];
+        $this->assertSame('File1.php', (string) $file1['name']);
+        $this->assertCount(2, $file1->error);
+        $this->assertSame('42', (string) $file1->error[0]['line']);
+        $this->assertSame('error', (string) $file1->error[0]['severity']);
+        $this->assertSame('phpdoc-validator.extra_param', (string) $file1->error[0]['source']);
+
+        $file2 = $xml->file[1];
+        $this->assertSame('File2.php', (string) $file2['name']);
+        $this->assertCount(1, $file2->error);
+        $this->assertSame('warning', (string) $file2->error[0]['severity']);
+        $this->assertSame('phpdoc-validator.missing_param', (string) $file2->error[0]['source']);
+    }
+
+    #[Test]
+    public function checkstyleFormatterSeverityMapping(): void
+    {
+        $formatter = new CheckstyleFormatter();
+        $report = new Report();
+
+        $file = new FileReport('/path/file.php');
+        $method = new MethodInfo('test', 1, ['a' => 'string'], 'int');
+        $file->addMethodIssues($method, [
+            new Issue('extra_param', 'extra', 'Extra', 'string', null),
+            new Issue('type_mismatch', 'a', 'Mismatch', 'string', 'int'),
+            new Issue('missing_param', 'b', 'Missing'),
+            new Issue('return_mismatch', '$return', 'Return', 'int', 'string'),
+            new Issue('missing_return', '$return', 'Missing return'),
+        ]);
+        $report->addFileReport($file);
+
+        $output = $formatter->format($report);
+        $xml = new \SimpleXMLElement($output);
+
+        $errors = $xml->file[0]->error;
+        $this->assertSame('error', (string) $errors[0]['severity']);   // extra_param
+        $this->assertSame('error', (string) $errors[1]['severity']);   // type_mismatch
+        $this->assertSame('warning', (string) $errors[2]['severity']); // missing_param
+        $this->assertSame('error', (string) $errors[3]['severity']);   // return_mismatch
+        $this->assertSame('warning', (string) $errors[4]['severity']); // missing_return
+    }
+
+    #[Test]
+    public function checkstyleFormatterHandlesParseErrors(): void
+    {
+        $formatter = new CheckstyleFormatter();
+        $report = new Report();
+        $report->addFileReport(new FileReport('/path/broken.php', 'Syntax error on line 5'));
+
+        $output = $formatter->format($report, '/path');
+
+        $xml = new \SimpleXMLElement($output);
+        $this->assertCount(1, $xml->file);
+        $this->assertSame('broken.php', (string) $xml->file[0]['name']);
+        $this->assertSame('1', (string) $xml->file[0]->error[0]['line']);
+        $this->assertSame('warning', (string) $xml->file[0]->error[0]['severity']);
+        $this->assertSame('phpdoc-validator.parse_error', (string) $xml->file[0]->error[0]['source']);
+    }
+
+    #[Test]
+    public function checkstyleFormatterOutputsEmptyCheckstyleForCleanReport(): void
+    {
+        $formatter = new CheckstyleFormatter();
+        $report = $this->createCleanReport();
+
+        $output = $formatter->format($report);
+
+        $xml = new \SimpleXMLElement($output);
+        $this->assertSame('checkstyle', $xml->getName());
+        $this->assertCount(0, $xml->file);
+    }
+
+    #[Test]
+    public function checkstyleFormatterEscapesXmlSpecialCharacters(): void
+    {
+        $formatter = new CheckstyleFormatter();
+        $report = new Report();
+
+        $file = new FileReport('/path/to/file.php');
+        $method = new MethodInfo('test', 10, ['a' => 'string']);
+        $file->addMethodIssues($method, [
+            new Issue('type_mismatch', 'a', 'Expected array<string, int> & Foo but got "bar"', 'array<string, int>', 'string'),
+        ]);
+        $report->addFileReport($file);
+
+        $output = $formatter->format($report);
+
+        // Should be valid XML despite special characters in the message
+        $xml = new \SimpleXMLElement($output);
+        $this->assertStringContainsString('array<string, int> & Foo but got "bar"', (string) $xml->file[0]->error[0]['message']);
     }
 }

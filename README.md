@@ -6,7 +6,7 @@ Validates PHPDoc `@param` and `@return` tags against method signatures using AST
 
 - **Type compatibility checking** — Understands PHPDoc-specific types like `list<T>`, `class-string<T>`, `positive-int`
 - **Result caching** — Dramatically speeds up incremental runs.
-- **Multiple output formats** — Pretty CLI output, JSON for tooling, GitHub Actions annotations
+- **Multiple output formats** — Pretty CLI output, JSON for tooling, GitHub Actions annotations, Checkstyle XML
 - **CI-friendly** — Exit codes for easy integration into build pipelines
 - **Flexible scanning** — Scan directories or individual files with glob-based exclusions
 
@@ -42,13 +42,16 @@ vendor/bin/phpdoc-validator src/ --format=json
 
 # GitHub Actions annotations
 vendor/bin/phpdoc-validator src/ --format=github
+
+# Checkstyle XML (for CI tools like Jenkins, GitLab CI, etc.)
+vendor/bin/phpdoc-validator src/ --format=checkstyle
 ```
 
 ### Options
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--format` | `-f` | Output format: `pretty`, `json`, `github` |
+| `--format` | `-f` | Output format: `pretty`, `json`, `github`, `checkstyle` |
 | `--no-color` | | Disable colored output |
 | `--exclude` | `-e` | Patterns to exclude (can be used multiple times) |
 | `--missing` | `-m` | Also report missing `@param` and `@return` documentation |
@@ -145,16 +148,28 @@ Summary:
 ::error file=src/UserService.php,line=42,title=Type mismatch::Type mismatch for $email: signature has 'string', doc has 'int'
 ```
 
+### Checkstyle Format
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="4.3">
+  <file name="src/UserService.php">
+    <error line="42" severity="error" message="Extra @param $role not in method signature" source="phpdoc-validator.extra_param"/>
+    <error line="42" severity="error" message="Type mismatch for $email: signature has 'string', doc has 'int'" source="phpdoc-validator.type_mismatch"/>
+  </file>
+</checkstyle>
+```
+
 ## Caching
 
 PHPDoc Validator caches validation results to dramatically speed up incremental runs. On subsequent runs, only files that have changed since the last validation are re-parsed.
 
 ```bash
 # First run: validates all files and creates cache
-vendor/bin/phpdoc-validator src/   # ~30s for large codebase
+vendor/bin/phpdoc-validator src/
 
 # Second run: uses cache, only validates changed files
-vendor/bin/phpdoc-validator src/   # ~0.3s (100x faster)
+vendor/bin/phpdoc-validator src/
 
 # Disable caching
 vendor/bin/phpdoc-validator src/ --no-cache
@@ -191,8 +206,19 @@ The cache automatically invalidates when:
 ```yaml
 phpdoc:
   script:
-    - vendor/bin/phpdoc-validator src/
+    - vendor/bin/phpdoc-validator src/ --format=checkstyle > phpdoc-report.xml
+  artifacts:
+    reports:
+      codequality: phpdoc-report.xml
 ```
+
+### Jenkins / Generic CI
+
+```bash
+vendor/bin/phpdoc-validator src/ --format=checkstyle > phpdoc-report.xml
+```
+
+The Checkstyle XML format is supported by most CI platforms and code quality tools.
 
 ## Development
 

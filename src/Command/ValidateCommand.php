@@ -8,6 +8,7 @@ use NsRosenqvist\PhpDocValidator\Cache\CacheMode;
 use NsRosenqvist\PhpDocValidator\Cache\CacheSignature;
 use NsRosenqvist\PhpDocValidator\Cache\ValidationCache;
 use NsRosenqvist\PhpDocValidator\Fixer\DocBlockFixer;
+use NsRosenqvist\PhpDocValidator\Formatter\CheckstyleFormatter;
 use NsRosenqvist\PhpDocValidator\Formatter\FormatterInterface;
 use NsRosenqvist\PhpDocValidator\Formatter\GithubActionsFormatter;
 use NsRosenqvist\PhpDocValidator\Formatter\JsonFormatter;
@@ -47,7 +48,7 @@ final class ValidateCommand extends Command
                 'format',
                 'f',
                 InputOption::VALUE_REQUIRED,
-                'Output format: pretty, json, github',
+                'Output format: pretty, json, github, checkstyle',
                 'pretty'
             )
             ->addOption(
@@ -113,9 +114,10 @@ The <info>%command.name%</info> command validates that PHPDoc @param tags match 
   <info>%command.full_name% src/ --exclude="*Test.php" --exclude="*/fixtures/*"</info>
 
 <comment>Output formats:</comment>
-  <info>%command.full_name% src/ --format=pretty</info>  (default, with colors)
-  <info>%command.full_name% src/ --format=json</info>    (machine-readable)
-  <info>%command.full_name% src/ --format=github</info>  (GitHub Actions annotations)
+  <info>%command.full_name% src/ --format=pretty</info>      (default, with colors)
+  <info>%command.full_name% src/ --format=json</info>        (machine-readable)
+  <info>%command.full_name% src/ --format=github</info>      (GitHub Actions annotations)
+  <info>%command.full_name% src/ --format=checkstyle</info>  (Checkstyle XML for CI tools)
 
 <comment>Report missing documentation:</comment>
   <info>%command.full_name% src/ --missing</info>
@@ -276,6 +278,7 @@ HELP);
         return match ($format) {
             'json' => new JsonFormatter(),
             'github' => new GithubActionsFormatter(),
+            'checkstyle' => new CheckstyleFormatter(),
             default => new PrettyFormatter(!$noColor),
         };
     }
